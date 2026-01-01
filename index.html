@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>365 Pytañ do Zwi¹zku</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff7f0;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+    }
+    #question {
+      font-size: 1.5em;
+      background: #ffd6a5;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      max-width: 600px;
+    }
+  </style>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="question">£adowanie pytania...</div>
+
+<script>
+  // Konfiguracja Firebase – podmieñ na swoj¹
+  const firebaseConfig = {
+    apiKey: "AIzaSyCXlCQ_63lHlY1--UHHfXfO1HdsviESx1w",
+    authDomain: "pytanie-dla-nas.firebaseapp.com",
+    databaseURL: https://pytanie-dla-nas-default-rtdb.firebaseio.com/
+    projectId: "pytanie-dla-nas",
+    storageBucket: "pytanie-dla-nas.firebasestorage.app",
+    messagingSenderId: "312894256042",
+    appId: "1:312894256042:web:794e26062a4e0f155c71d3"
+  };
+
+  // Inicjalizacja Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const questionDiv = document.getElementById('question');
+
+  async function loadQuestion() {
+    const snapshot = await db.ref('/').get();
+    const data = snapshot.val();
+
+    let { questions, unusedIndexes, lastDrawDate } = data;
+    const today = new Date().toISOString().slice(0,10);
+
+    if (lastDrawDate === today && data.currentIndex !== undefined) {
+      // Ju¿ wylosowane dzisiaj
+      questionDiv.textContent = questions[data.currentIndex];
+      return;
+    }
+
+    if (unusedIndexes.length === 0) {
+      // Reset po wyczerpaniu pytañ
+      unusedIndexes = Array.from({length: questions.length}, (_, i) => i);
+    }
+
+    // Losowanie indeksu
+    const randomIdx = Math.floor(Math.random() * unusedIndexes.length);
+    const questionIndex = unusedIndexes[randomIdx];
+
+    // Aktualizacja unusedIndexes
+    unusedIndexes.splice(randomIdx, 1);
+
+    // Zapis do Firebase
+    await db.ref('/').update({
+      unusedIndexes: unusedIndexes,
+      lastDrawDate: today,
+      currentIndex: questionIndex
+    });
+
+    questionDiv.textContent = questions[questionIndex];
+  }
+
+  loadQuestion();
+</script>
+
+</body>
+</html>
